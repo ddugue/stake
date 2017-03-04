@@ -1,0 +1,5 @@
+#!/bin/sh
+
+source var/bin/activate
+export PYTHONPATH=$PYTHONPATH:$PWD/src
+nosetests -v
