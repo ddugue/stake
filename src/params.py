@@ -38,6 +38,16 @@ class InvalidCastError(ParsingError):
         )
 
 
+def get_value(key):
+    "Returns value name of a key in format namespace:key"
+    return key.split(":")[-1]
+
+def get_namespace(key):
+    "Returns the namespace of a key in a format namespace:key"
+    if not ":" in key:
+        return None
+    return ".".join(key.split(":")[:-1])
+
 #-- Classes
 class Parameter():
     """Handles the representation of a configuration parameter"""
@@ -83,12 +93,9 @@ class Parameter():
         """Cast the value to the desired type, raise value error on impossible cast"""
         return self.__class__.cast(value)
 
-    def get_value_name(self):
-        """Returns the value name without the namespace"""
-        return self.name.split(":")[-1]
-
     def parse(self, kwargs, name=None):
         """Change parameter object value for this parameter on kwargs"""
+        kwargs = kwargs.copy()
 
         if self.name in kwargs:
             # We try first to get the value directly
@@ -104,7 +111,7 @@ class Parameter():
 
         # Convert the value to the desired type
         try:
-            kwargs[self.get_value_name()] = self.convert(value)
+            kwargs[get_value(self.name)] = self.convert(value)
         except ValueError as error:
             # Wrap value error in an Invalid cast error for
             # a more precise error message
@@ -153,6 +160,26 @@ class ChoiceParameter(Parameter):
         else:
             raise ValueError("%s is not an available choice" % value)
 
+class NamespaceParameter(Parameter):
+    """Parameter that returns all the values associated to a namespace"""
+
+    def __init__(self, *args, **argparse_kwargs):
+        super().__init__(*args, **argparse_kwargs)
+        self.is_cli = False
+
+    def parse(self, kwargs, name=None):
+        "Returns a dict populated with all values of kwargs"
+
+        kwargs = kwargs.copy()
+        values = {}
+
+        for key in kwargs:
+            if self.name == get_namespace(key):
+                values[get_value(key)] = kwargs[key]
+
+        kwargs[self.name] = values
+        return kwargs
+
 
 def argparser_arguments(parameter, default_values=None):
     """Transform parameter into an argparser argument and adds it"""
@@ -162,7 +189,7 @@ def argparser_arguments(parameter, default_values=None):
     short = kwargs.pop("short", None)
     if short:
         args.append("-%s" % short)
-    args.append("--%s" % parameter.get_value_name())
+    args.append("--%s" % get_value(parameter.name))
 
     # Allows external source of overriding default values
     if default_values and parameter.name in default_values:
@@ -184,6 +211,7 @@ integer = IntegerParameter
 boolean = BoolParameter
 choice = ChoiceParameter
 array = ListParameter
+namespace = NamespaceParameter
 
 #-- Public function
 def add_arguments(parser, default_values=None):

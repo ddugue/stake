@@ -95,6 +95,24 @@ class TestParseParameter(unittest.TestCase):
         with self.assertRaises(params.MissingParameterError):
             param.parse({"test2":"value"})
 
+    def test_parse_namespace(self):
+        "Ensure that we can parse with the special namespace parser"
+        to_parse = {
+            "test:value": "a",
+            "test:2_value": "b"
+        }
+        expected = {
+            "test":{
+                "value": "a",
+                "2_value": "b"
+            },
+            "test:value": "a",
+            "test:2_value": "b"
+        }
+        param = params.NamespaceParameter("test")
+        self.assertEqual(expected, param.parse(to_parse))
+
+
     def test_default_parse(self):
         """Ensure that the default is loaded when missing parameter"""
         param = params.Parameter("test", default="default_value")
