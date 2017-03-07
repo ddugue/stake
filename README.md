@@ -5,4 +5,4 @@
 ## Usage
 ## Extending
 ## Contributions
-This project is under the GNU GPL v3 license.
+This project is under the BSD License
