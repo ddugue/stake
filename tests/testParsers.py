@@ -1,48 +1,55 @@
 import unittest
 import uuid
 import os
-import sys
-from config.ini import IniConfigParser
-FILE_CONTENT = """
+import params
+from config.ini import parser as configparser
+
+file_content = """[Base]
+first_level = 1
+
 [SECTION]
 subkey = value
 
 [TEST]
 key = value
 """
-
 class FileParsingTest(unittest.TestCase):
-    parser = IniConfigParser()
+    "Generic test to test a parser"
+
 
     def setUp(self):
         self.uuid =str(uuid.uuid4())
-        self.file = open("/tmp/"+self.uuid, "w+")
-        self.file.write(FILE_CONTENT)
+        self.path = "/tmp/"+self.uuid
+        self.file = open(self.path, "w+")
+        self.file.write(file_content)
         self.file.seek(0)
 
+    def get_parser(self):
+        return configparser
+
+    def test_no_file(self):
+        "When no config file is provided, it should raise an error"
+        with self.assertRaises(params.MissingParameterError):
+            self.get_parser()()
+
     def test_file_treatment(self):
-        config = self.parser(config_file=self.file)
+        "Ensures that parser returns a value"
+        config = self.get_parser()(config_file=self.path)
         self.assertIsNotNone(config)
+
+    def test_base(self):
+        "Ensures that parser handles first level values"
+        config = self.get_parser()(config_file=self.path)
+        print(config)
+        self.assertEqual(config["first_level"], "1")
 
     def test_section_parsing(self):
-        config = self.parser(config_file=self.file)
+        "Ensures that parser handles section and subkey correctly"
+        config = self.get_parser()(config_file=self.path)
         self.assertIsNotNone(config)
-        self.assertEqual(config["SECTION"], {"subkey":"value"})
-
-    def test_variable(self):
-        config = self.parser(config_file=self.file)
-        self.assertEqual(config["TEST"]["key"], "value")
-
-    def test_additional_arguments(self):
-        config = self.parser(config_file=self.file, a=2)
-        self.assertEqual(config["a"], 2)
-
-    def test_override_arguments(self):
-        config = self.parser(config_file=self.file, **{"TEST":{"key":"overrideValue"}})
-        self.assertEqual(config["TEST"]["key"], "overrideValue")
+        print(config)
+        self.assertEqual(config["section:subkey"], "value")
 
     def tearDown(self):
         self.file.close()
         os.remove("/tmp/"+self.uuid)
-
-
