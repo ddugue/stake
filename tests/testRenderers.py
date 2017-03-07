@@ -36,3 +36,20 @@ class RendererTest(unittest.TestCase):
     def tearDown(self):
         self.file.close()
         os.remove("/tmp/"+self.uuid)
+
+class SiteVariableLoadingTest(unittest.TestCase):
+    "Tests linked to site variable loading"
+    def test_site_variables(self):
+        "Test that the site variables are in the context_data"
+        config_data = {
+            "site:facebook": "FacebookURL",
+            "site:twitter": "TwitterURL"
+        }
+        renderer = Renderer(**config_data)
+        ctxt = renderer.get_context_data()
+        self.assertEqual(ctxt, {
+            "site": {
+                "facebook": "FacebookURL",
+                "twitter": "TwitterURL"
+            }
+        })

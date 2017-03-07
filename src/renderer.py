@@ -3,6 +3,7 @@ from jinja2 import Environment, BaseLoader, FileSystemLoader
 import params
 
 @params.string("cwd", default=".")
+@params.namespace("site")
 class Renderer:
     """Renders a file in an extensible way"""
 
@@ -20,7 +21,9 @@ class Renderer:
 
     def get_context_data(self) -> dict:
         """Returns a dict of the ctxt data"""
-        return {}
+        return {
+            "site": getattr(self, "site")
+        }
 
     def get_render_fn(self):
         """Return a callable that takes environment, ctxt_data and file"""
