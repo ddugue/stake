@@ -1,10 +1,18 @@
-from jinja2 import Environment
 
-class Renderer(object):
+from jinja2 import Environment, BaseLoader, FileSystemLoader
+import params
+
+@params.string("cwd", default=".")
+class Renderer:
     """Renders a file in an extensible way"""
-    def get_loader(self) -> Loader:
+
+    def __init__(self, **kwargs):
+        for k, item in kwargs.items():
+            setattr(self, k, item)
+
+    def get_loader(self) -> BaseLoader:
         """Returns a Jinja2 Loader object for rendering"""
-        pass
+        return FileSystemLoader(getattr(self, "cwd"))
 
     def get_environment(self):
         """Returns the jinja2 environment"""
@@ -16,16 +24,19 @@ class Renderer(object):
 
     def get_render_fn(self):
         """Return a callable that takes environment, ctxt_data and file"""
-        def render(environment, ctxt_data, file):
-            template = environment.get_template(file)
+        def render(environment, ctxt_data, file_path):
+            "Renders a jinja2 template"
+            template = environment.get_template(file_path)
             return template.render(**ctxt_data)
+        return render
 
-    def __call__(self, file) -> str:
+    def __call__(self, file_path) -> str:
         """Render a file.
 
         Calls get_render_fn and inputs get_environment(),
-        get_context_data() and returns the render"""
+        get_context_data() and returns the render
+        """
         render = self.get_render_fn()
         environment = self.get_environment()
         context_data = self.get_context_data()
-        return render(environment, context_data, file)
+        return render(environment, context_data, file_path)

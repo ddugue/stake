@@ -1,55 +1,57 @@
 import argparse
-import params
 import importlib
-from config.ini import parser as iniconfigparser
-from base import Renderer
+from renderer import Renderer
+import params
 
-class Loader():
+def import_element(path):
+    "Import and return a single element via importlib"
+    packages = path.split(".")
+    module = ".".join(packages[:-1])
+    return getattr(importlib.import_module(module), packages[-1])
 
-    def __init__(self, configparser):
-        self.configparser = configs
 
-    def get_argparser(self):
-        """Create and return a single argument parser"""
-        if not self.argparser:
-            self.argparser = argparse.ArgumentParser(conflict_handler="resolve")
-            self.argparser.add_argument("src", help="Source file to render")
-        return params.to_argparser(self.argparser)
+class Loader:
+    "Loads the different modules and renders a file"
 
-    def get_configparser(self):
-        return self.configparser
+    @params.string("config_type", default="config.ini.parser")
+    def get_config(self, config_type, **__):
+        "Load a specific config type"
+        return import_element(config_type)
 
-    @param.string("extensions", help="List of extensions", is_cli=False, default=None)
-    def get_renderer(self, extensions, **arguments):
-        """Returns a callable that takes a file and returns a string"""
-        renderers = [Renderer]
-        for cls in extensions:
-            module = importlib.import_module(cls)
-            renderers.append(import cls)
+    @params.array("extensions", short="x", default=[])
+    def get_extensions(self, extensions, **__):
+        "Imports and returns the list of extensions"
+        return [import_element(extension) for extension in extensions]
 
-        argparser = self.get_argparser()
-        argparser
-        pass
+    def __init__(self):
+        self.parser = argparse.ArgumentParser(conflict_handler="resolve")
+        self.parser.add_argument("file", help="Relative file path")
 
-    def get_outputter(self):
-        """Returns a callable that takes a string and outputs its content"""
-        pass
+    def parse_args(self, previous=None):
+        "Parse arguments and update them with the new values"
+        params.add_arguments(self.parser, previous)
+
+        if not previous:
+            previous = {}
+        previous.update(vars(self.parser.parse_known_args()[0]))
+        return previous
 
     def __call__(self):
-        argparser = self.get_argparser()
-        arguments = vars(argparser.parse_known_args()[0])
-        arguments = self.configparser(**arguments)
-        renderer = self.get_renderer(self, **arguments):
-        output = self.get_outputter()
-        output(renderer(arguments["src"]))
+        values = self.parse_args()
 
+        config_cls = self.get_config(**values)
+
+        values = self.parse_args(values)
+        values.update(config_cls(**values))
+
+        extensions = self.get_extensions(**values)
+        values = self.parse_args(values)
+
+        renderable = Renderer(**values)
+        while extensions:
+            renderable = extensions.pop()(renderable, **values)
+
+        return renderable(values.get("file"))
 
 if __name__ == "__main__":
-    arguments = vars(parser.parse_known_args()[0])
-    print(arguments)
-    update_arguments = configparser(**arguments)
-    print(update_arguments)
-    mod = importlib.import_module("config.t")
-    parser = params.to_argparser(parser)
-    arguments = vars(parser.parse_args())
-    print(arguments)
+    print(Loader()())

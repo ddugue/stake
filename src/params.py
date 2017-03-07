@@ -1,143 +1,116 @@
 #-- Imports
-import copy
-import warnings
+import types
 
-from utils import *
-
+__all__ = ["string", "boolean", "integer", "choice", "array"]
 #-- Constants
-PARAMETERIZED_CLS = set()
+ARGPARSE_PARAMETERS = set()
 
 #-- Exceptions
-class MissingNamespaceError(Exception):
-    """Triggered when missing a namespace upon initialization"""
-
-    def __init__(self, cls, namespace, *args, **kwargs):
-        self.namespace = namespace
-        self.cls = cls
-        super().__init__(*args, **kwargs)
-
-    def __str__(self):
-        return "%s is missing for %s, make sure to provide the arguments " \
-            + "as keyword arguments" \
-            % (self.namespace, self.cls.__name__)
-
 class ParsingError(Exception):
-    """Error triggered when there is a parser error"""
+    """Triggered when there is an error parsing a parameter"""
 
-    def __init__(self, parameter, *args, **kwargs):
+    def __init__(self, parameter, cls_name, *args, **kwargs):
         self.parameter = parameter
+        self.cls_name = cls_name
         super().__init__(*args, **kwargs)
 
 class MissingParameterError(ParsingError):
-    """Triggered when there's a missing parameter upon initialization"""
+    """Triggered when there's a missing parameter upon parsing"""
 
     def __str__(self):
-        return "%s is missing for %s, make sure to either add " \
-            + "a default value for the parameter or provide its value" \
-            % (self.parameter.name, self.parameter.cls.__name__)
+        msg = ("%s is missing for %s, make sure to either add a default value"
+               " for the parameter or provide its value")
+        return msg % (self.parameter.name, self.cls_name)
 
 class InvalidCastError(ParsingError):
-    """Triggered when there's an invalid type casting upon initialization"""
+    """Triggered when there's an invalid type casting upon parsing"""
 
     def __init__(self, value_error, *args, **kwargs):
         self.value_error = value_error
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return "%s could not be cast with %s on %s: %s" \
-            % (
-                self.parameter.name,
-                repr(self.parameter.cast),
-                self.parameter.cls.__name__,
-                self.value_error.message
-            )
+        return "%s could not be cast with %s on %s: %s" % (
+            self.parameter.name,
+            repr(self.parameter.cast),
+            self.cls_name,
+            str(self.value_error)
+        )
 
 
 #-- Classes
-class Parameter(object):
+class Parameter():
     """Handles the representation of a configuration parameter"""
+    cast = lambda x: x
 
-    def __init__(self, cls, name, short="", is_cli=True, *args, **argparse):
-        # Associated class object
-        self.cls = cls
+    def __init__(self, name, is_cli=True, **argparse_kwargs):
+        """Configure a parameter:
 
+        name = Name of the parameter in the format namespace:argument
+        is_cli = Wether ArgparseArgument should add this parameter
+                 to an argparse
+        argparse_kwargs = Arguments to send to ArgparseArgument
+        * default = If provided, will be in argparse_kwargs
+        * help = If provided, will be in argparse_kwargs
+        """
         # Name of the parameter
         self.name = name
-
-        # Short version of the parameter (for argparse)
-        assert len(short) < 2
-        self.short = short
         self.is_cli = is_cli
-        if self.short and not self.is_cli:
-            warnings.warn("Providing short argument and not using argparse is inconsitant")
-
-        # Namespace (plugin space) of the parameter
-        self.namespace = argparse.pop("namespace", "")
 
         # Args to pass to argparse
-        self.args = argparse
+        self.argparse_kwargs = argparse_kwargs
 
-    def get_cast(self):
-        """Return function to cast values"""
-        return getattr(self, "cast", lambda x:x)
+        # We register the instance of the parameter to our singleton
+        ARGPARSE_PARAMETERS.add(self)
+
+    def __call__(self, wrapped):
+        "Validate argument before sending it to fn or class"
+        is_fn = isinstance(wrapped, types.FunctionType)
+        wrapped_fn = wrapped if is_fn else wrapped.__init__
+
+        def validate_args(*args, **kwargs):
+            "Wrapping function that validates the args sent"
+            # We get the namespace of the current argument
+
+            return wrapped_fn(*args, **self.parse(kwargs, name=wrapped.__name__))
+
+        if not is_fn:
+            wrapped.__init__ = validate_args
+            return wrapped # If is a class we return a class
+        return validate_args # If is a function we return a function
 
     def convert(self, value):
         """Cast the value to the desired type, raise value error on impossible cast"""
-        return self.get_cast()(value)
+        return self.__class__.cast(value)
 
-    def parse(self, kwargs):
+    def get_value_name(self):
+        """Returns the value name without the namespace"""
+        return self.name.split(":")[-1]
+
+    def parse(self, kwargs, name=None):
         """Change parameter object value for this parameter on kwargs"""
 
         if self.name in kwargs:
             # We try first to get the value directly
             value = kwargs[self.name]
-        elif "default" in self.args:
+
+        elif "default" in self.argparse_kwargs:
             # We try to get the default value if posible
-            def_value = self.args["default"]
-            value = def_value() if callable(def_value) else def_value
+            default_value = self.argparse_kwargs["default"]
+            value = default_value() if callable(default_value) else default_value
+
         else:
-            # Missing parameter
-            raise MissingParameterError(self)
+            raise MissingParameterError(self, name)
 
         # Convert the value to the desired type
         try:
-            kwargs[self.name] = self.convert(value)
-        except ValueError as ex:
+            kwargs[self.get_value_name()] = self.convert(value)
+        except ValueError as error:
             # Wrap value error in an Invalid cast error for
             # a more precise error message
-            raise InvalidCastError(ex, self)
+            raise InvalidCastError(error, self, name)
         return kwargs
 
-
-    def get_argparser_kwargs(self):
-        """Get the arguments to pass to argparser.add_argument"""
-
-        kwargs = copy.deepcopy(self.args)
-        kwargs.update({
-            "dest": self.name,
-            "type": self.get_cast(),
-            "required": True
-        })
-
-        if "default" in kwargs:
-            del kwargs["required"]
-
-
-        namespace = self.namespace or getattr(self.cls, "_namespace", None)
-        if namespace:
-            kwargs["action"] = StoreNamespace
-            kwargs["namespace"] = self.namespace
-        return kwargs
-
-    def to_argparser(self, argparser):
-        """Transform parameter into an argparser argument and adds it"""
-        if self.is_cli:
-            args = []
-            if self.short:
-                args.append("-%s" % self.short)
-            args.append("--%s" % self.name)
-            argparser.add_argument(*args, **self.get_argparser_kwargs())
-        return argparser
 
 class StringParameter(Parameter):
     """Convert a string parameter to a string"""
@@ -152,25 +125,27 @@ class BoolParameter(Parameter):
 
     @staticmethod
     def cast(value):
-        if isinstance(value, str) and \
-           value.lower() in ["false", "no", "off"]:
+        "Cast a bool value and accept false, no and off"
+        if isinstance(value, str) and value.lower() in ["false", "no", "off"]:
             return False
         else:
             return bool(value)
 
+class ListParameter(Parameter):
+    """Convert a string separated with comma to a list"""
+
+    @staticmethod
+    def cast(value):
+        "Transform a string into a list"
+        return str(value).split(",")
 
 class ChoiceParameter(Parameter):
     """Ensures that a parameter is an available choice"""
 
-    def __init__(self, choices=None, *args, **kwargs):
+    def __init__(self, choices=None, *args, **argparse_kwargs):
         self.choices = choices
-        super().__init__(*args, **kwargs)
-
-    def get_argparser_kwargs(self):
-        """Forces arguments sent via argpraser to be bool"""
-        kwargs = super().get_argparser_kwargs()
-        kwargs["choices"] = self.choices
-        return kwargs
+        argparse_kwargs["choices"] = self.choices
+        super().__init__(*args, **argparse_kwargs)
 
     def convert(self, value):
         if value in self.choices:
@@ -178,101 +153,43 @@ class ChoiceParameter(Parameter):
         else:
             raise ValueError("%s is not an available choice" % value)
 
-#-- Decorators
-class namespace():
-    """Encapsulate all parameter type inside a namespace
 
-    If you do not provide a name, the auto-generated name
-    for the namespace will be the class name minus the 'Extension' suffix"""
+def argparser_arguments(parameter, default_values=None):
+    """Transform parameter into an argparser argument and adds it"""
+    args = []
+    kwargs = parameter.argparse_kwargs.copy()
 
-    def __init__(self, name=""):
-        self.name = name
+    short = kwargs.pop("short", None)
+    if short:
+        args.append("-%s" % short)
+    args.append("--%s" % parameter.get_value_name())
 
-    def __call__(self, cls):
-        cls._namespace = self.name or cls.__name__.replace("Extension", "")
-        return cls
+    # Allows external source of overriding default values
+    if default_values and parameter.name in default_values:
+        kwargs["default"] = default_values[parameter.name]
 
-class param():
-    """Encapsulate object initialization with a string parameter"""
-    parameter_type = Parameter
+    if not "default" in kwargs:
+        kwargs["required"] = True
 
-    @staticmethod
-    def replace_init(cls):
-        # Override init to add parameter verification and raise error
-        original_init = cls.__init__
+    kwargs.update({
+        "dest": parameter.name
+    })
 
-        def validate(self, *args, **kwargs):
-            namespace = getattr(self.__class__, "_namespace", None)
+    return (args, kwargs) if parameter.is_cli else (None, None)
 
-            if namespace and namespace not in kwargs:
-                raise MissingNamespaceError(self.__class__, namespace=namespace)
-
-            kwargs = copy.deepcopy(kwargs)
-            kwargs.update(kwargs.get(namespace,{}))
-            kwargs = pipe(self.__class__._params, "parse", kwargs)
-
-            original_init(self, *args, **kwargs)
-
-        cls.__init__ = validate
-
-
-    def get_parameter_type(self):
-        """Return the parameter type"""
-        return self.parameter_type
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-
-    def __call__(self, cls):
-        if not hasattr(cls, "_params"):
-            cls._params = []
-
-        # We proxy decorators argument to the
-        # Parameter class (see above)
-        cls._params.append(self.get_parameter_type()(cls, *self.args, **self.kwargs))
-
-        # We inject a new __init__ function that will trigger
-        # validation errors
-        param.replace_init(cls)
-
-        # We add the class to the CLS singleton to retrieve
-        # it to generate the argparser
-        PARAMETERIZED_CLS.add(cls)
-        return cls
-
-class string(param):
-    """Encapsulate object initialization with a string parameter"""
-    parameter_type = StringParameter
-
-class integer(param):
-    """Encapsulate object initialization with an integer parameter"""
-    parameter_type = IntegerParameter
-    # TODO: Handle max and min value
-
-class boolean(param):
-    """Encapsulate object initialization with an integer parameter"""
-    parameter_type = BoolParameter
-
-class choice(param):
-    """Encapsulate object initialization with restricted choice parameter"""
-    parameter_type = ChoiceParameter
-
-
-class datetime(param):
-    # TODO:
-    pass
-
-class list(param):
-    # TODO:
-    pass
-
+#-- Alias for decorators
+param = Parameter
+string = StringParameter
+integer = IntegerParameter
+boolean = BoolParameter
+choice = ChoiceParameter
+array = ListParameter
 
 #-- Public function
-def to_argparser(parser):
+def add_arguments(parser, default_values=None):
     """Transform an argparser based on the loaded classes"""
-    for cls in PARAMETERIZED_CLS:
-        parser = pipe(cls._params, "to_argparser", parser)
+    for parameter in ARGPARSE_PARAMETERS:
+        args, kwargs = argparser_arguments(parameter, default_values)
+        if args:
+            parser.add_argument(*args, **kwargs)
     return parser
-
-
