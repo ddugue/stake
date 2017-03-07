@@ -1,0 +1,1 @@
+python src/loader.py tests/test.html -c tests/test.ini
