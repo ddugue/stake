@@ -5,9 +5,12 @@ import params
 
 def import_element(path):
     "Import and return a single element via importlib"
+
     packages = path.split(".")
-    module = ".".join(packages[:-1])
-    return getattr(importlib.import_module(module), packages[-1])
+    if packages[-1][0].isupper(): # Means its a class
+        module = ".".join(packages[:-1])
+        return getattr(importlib.import_module(module), packages[-1])
+    return getattr(importlib.import_module(path), "__default__")
 
 
 class Loader:

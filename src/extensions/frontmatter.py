@@ -70,3 +70,5 @@ class FrontMatterExtension(base.Extension):
             # Before returing output, we strip the front matter block
             return "\n".join(output.split("\n")[len(lines):])
         return render
+
+__default__ = FrontMatterExtension
