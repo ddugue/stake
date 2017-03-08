@@ -6,6 +6,7 @@ from renderer import Renderer
 
 FILE_CONTENT = """{{1+1}}"""
 class RendererTest(unittest.TestCase):
+    "Tests to ensure our Renderer work"
     def setUp(self):
         self.uuid =str(uuid.uuid4())
         self.file = open("/tmp/"+self.uuid, "w+")

@@ -22,7 +22,7 @@ class Extension(Renderer):
 
         return self.renderer.get_context_data()
 
-    def get_render(self):
+    def get_render_fn(self):
         """Return a function to render
 
         The function takes a jinja2 environment,
