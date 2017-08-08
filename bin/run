@@ -1,1 +1,1 @@
-python src/loader.py tests/test.html -c tests/test.ini
+python src/loader.py tests/test.html -c tests/test.ini --verbose 1

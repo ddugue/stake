@@ -144,6 +144,9 @@ class ListParameter(Parameter):
     @staticmethod
     def cast(value):
         "Transform a string into a list"
+        if isinstance(value, list):
+            # Already casted
+            return value
         return str(value).split(",")
 
 class ChoiceParameter(Parameter):

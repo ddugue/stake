@@ -7,10 +7,10 @@ def import_element(path):
     "Import and return a single element via importlib"
 
     packages = path.split(".")
-    if packages[-1][0].isupper(): # Means its a class
-        module = ".".join(packages[:-1])
-        return getattr(importlib.import_module(module), packages[-1])
-    return getattr(importlib.import_module(path), "__default__")
+    # if packages[-1][0].isupper(): # Means its a class
+    module = ".".join(packages[:-1])
+    return getattr(importlib.import_module(module), packages[-1])
+    # return getattr(importlib.import_module(path), "__default__")
 
 
 class Loader:
@@ -40,20 +40,28 @@ class Loader:
         return previous
 
     def __call__(self):
+        # Parse crucial values
         values = self.parse_args()
 
         config_cls = self.get_config(**values)
 
+        # Reparse values with new parameters added from config
         values = self.parse_args(values)
         values.update(config_cls(**values))
 
+        # Finally load extensions and reparse values
+        # based on extensions
         extensions = self.get_extensions(**values)
         values = self.parse_args(values)
 
+        print("Extensions: ", extensions)
+        # By decoration, create a composite renderer from the extensions
+        # and with the base renderer
         renderable = Renderer(**values)
         while extensions:
             renderable = extensions.pop()(renderable, **values)
 
+        print("Context: ", values)
         return renderable(values.get("file"))
 
 if __name__ == "__main__":
