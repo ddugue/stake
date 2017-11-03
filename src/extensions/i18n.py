@@ -13,4 +13,4 @@ class I18nExtension(base.extension):
             ctxt["url"] = lambda uri: uri
         return ctxt
 
-__default__ = i18nExtension
+__default__ = I18nExtension
