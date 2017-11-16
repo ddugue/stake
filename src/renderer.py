@@ -15,7 +15,7 @@ class Renderer:
         """Returns a Jinja2 Loader object for rendering"""
         return FileSystemLoader(getattr(self, "cwd"))
 
-    def get_environment(self):
+    def get_environment(self) -> Environment:
         """Returns the jinja2 environment"""
         return Environment(loader=self.get_loader())
 
