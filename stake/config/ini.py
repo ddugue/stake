@@ -1,5 +1,5 @@
 import configparser
-import params
+from stake import params
 
 @params.string("config_file", short="c", help="Relative path to the config file")
 def parser(config_file, **__):

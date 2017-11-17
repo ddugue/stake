@@ -1,6 +1,6 @@
 
 from jinja2 import Environment
-from renderer import Renderer
+from stake.renderer import Renderer
 
 class Extension(Renderer):
     "Base class to extend, decorator pattern to allow extension"

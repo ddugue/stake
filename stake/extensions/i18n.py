@@ -1,5 +1,5 @@
 from . import base
-import params
+from stake import params
 
 @namespace("i18n")
 @params.string("language", short="l")

@@ -1,6 +1,6 @@
-
 from jinja2 import Environment, BaseLoader, FileSystemLoader
-import params
+
+from . import params
 
 @params.string("cwd", default=".")
 @params.namespace("site")

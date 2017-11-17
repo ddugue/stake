@@ -1,7 +1,7 @@
 import argparse
 import importlib
-from renderer import Renderer
-import params
+from .renderer import Renderer
+from . import params
 
 def import_element(path):
     "Import and return a single element via importlib"
@@ -16,7 +16,7 @@ def import_element(path):
 class Loader:
     "Loads the different modules and renders a file"
 
-    @params.string("config_type", default="config.ini.parser")
+    @params.string("config_type", default="stake.config.ini.parser")
     def get_config(self, config_type, **__):
         "Load a specific config type"
         return import_element(config_type)
@@ -64,5 +64,8 @@ class Loader:
         print("Context: ", values)
         return renderable(values.get("file"))
 
-if __name__ == "__main__":
+def main():
     print(Loader()())
+
+if __name__ == "__main__":
+    main()

@@ -1,7 +1,7 @@
 
 import configparser
 
-import params
+from stake import params
 from . import base
 
 @params.integer("fm:allowed_skip", default=3)

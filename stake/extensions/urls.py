@@ -2,7 +2,7 @@
 import os
 import sys
 import importlib
-import params
+from stake import params
 from . import base
 
 # URL_FORMAT = ("name", {"args":"values"}, "url")
