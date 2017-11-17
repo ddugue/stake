@@ -1,5 +1,7 @@
 import argparse
 import importlib
+import os
+import sys
 from .renderer import Renderer
 from . import params
 
@@ -65,6 +67,9 @@ class Loader:
         return renderable(values.get("file"))
 
 def main():
+    p = os.getcwd()
+    print("Adding cwd to python path (for extension loading)")
+    sys.path.append(p)
     print(Loader()())
 
 if __name__ == "__main__":
