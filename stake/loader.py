@@ -24,8 +24,11 @@ class Loader:
         return import_element(config_type)
 
     @params.array("extensions", short="x", default=[])
-    def get_extensions(self, extensions, **__):
+    @params.array("extension_dir", default=["."])
+    def get_extensions(self, extensions, extension_dir, **__):
         "Imports and returns the list of extensions"
+        for d in extension_dir:
+            sys.path.append(os.path.join(os.getcwd(), d))
         return [import_element(extension) for extension in extensions]
 
     def __init__(self):
@@ -67,9 +70,6 @@ class Loader:
         return renderable(values.get("file"))
 
 def main():
-    p = os.getcwd()
-    print("Adding cwd to python path (for extension loading)")
-    sys.path.append(p)
     print(Loader()())
 
 if __name__ == "__main__":
