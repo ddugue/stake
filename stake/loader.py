@@ -23,8 +23,8 @@ class Loader:
         "Load a specific config type"
         return import_element(config_type)
 
-    @params.array("extensions", short="x", default=[])
-    @params.array("extension_dir", default=["."])
+    @params.array("extensions", short="x", default=[], help="Extensions to load")
+    @params.array("extension_dir", default=["."], help="Extension directories to add to sys path relative to project root")
     def get_extensions(self, extensions, extension_dir, **__):
         "Imports and returns the list of extensions"
         for d in extension_dir:
