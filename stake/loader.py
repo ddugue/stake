@@ -35,15 +35,20 @@ class Loader:
 
         for extension in extensions:
             try:
-                extension_cls = import_element(extension)
+                extension_cls = import_element(extension.strip())
                 assert issubclass(extension_cls, Extension)
-                yield import_element(extension)
+                yield extension_cls
             except AttributeError as e:
                 logging.error("""
                 Could not find %s class. Make sure that class %s is in your path.
                 To add a directory to your path easily. Simply add a directory in 'extension_dir' parameter.
                 """, extension, extension)
                 raise e
+            except ModuleNotFoundError as e:
+                logging.error("""
+                Module %s was not found in your path.
+                """, extension)
+                raise
             except AssertionError as e:
                 logging.error("""
                 Make sure that %s is extending the base class Extension.
