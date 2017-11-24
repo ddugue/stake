@@ -79,25 +79,31 @@ class Loader:
         values = self.parse_args(values)
         values.update(config_cls(**values))
 
+        # Reconfigure logger in case there was some different values in config
         self.configure_logger(**values)
 
         # Finally load extensions and reparse values
         # based on extensions
         extensions = self.get_extensions(**values)
-        LOGGER.debug("Rendering %s with extensions %s", values.get("file"), extensions)
         values = self.parse_args(values)
 
+        LOGGER.debug("Rendering %s with extensions %s...", values.get("file"), extensions)
         # By decoration, create a composite renderer from the extensions
         # and with the base renderer
         renderable = Renderer(**values)
         while extensions:
             renderable = extensions.pop()(renderable, **values)
 
-        return renderable(values.get("file"))
+        rendered = renderable(values.get("file"))
+
+        LOGGER.debug("Saving %s to %s...", values.get("file"), values.get("output"))
+        output = self.get_output(**values)
+        output.write(rendered)
+        output.close()
 
 def main():
     try:
-        print(Loader()())
+        Loader()()
     except Exception as e:
         LOGGER.error(e)
         exit(1)
