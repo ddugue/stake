@@ -2,6 +2,10 @@ import argparse
 import importlib
 import os
 import sys
+import logging
+LOGGER = logging.getLogger("stake")
+
+
 from .renderer import Renderer
 from . import params
 
@@ -14,7 +18,6 @@ def import_element(path):
     return getattr(importlib.import_module(module), packages[-1])
     # return getattr(importlib.import_module(path), "__default__")
 
-
 class Loader:
     "Loads the different modules and renders a file"
 
@@ -25,11 +28,31 @@ class Loader:
 
     @params.array("extensions", short="x", default=[], help="Extensions to load")
     @params.array("extension_dir", default=["."], help="Extension directories to add to sys path relative to project root")
-    def get_extensions(self, extensions, extension_dir, **__):
+    def get_extensions(self, extensions, extension_dir, **__) -> list:
         "Imports and returns the list of extensions"
         for d in extension_dir:
             sys.path.append(os.path.join(os.getcwd(), d))
         return [import_element(extension) for extension in extensions]
+
+    @params.string("output", short="o", default=None, help="Save render to output (default stdout)")
+    @params.string("output_dir", default=".", help="Directory of output for relative paths")
+    def get_output(self, output, output_dir, **__):
+        "Return a file-like object to output the result of the render"
+        if output:
+            result_path = os.path.abspath(os.path.join(output_dir, output))
+            result_dir = os.path.dirname(result_path)
+            os.makedirs(result_dir, exist_ok=True)
+            return open(result_path, "w")
+        return sys.stdout
+
+    @params.boolean("verbose", default=False, help="Verbose output")
+    def configure_logger(self, verbose, **__):
+        logger = logging.getLogger("stake")
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.WARNING)
+        return logger
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(conflict_handler="resolve")
@@ -48,29 +71,36 @@ class Loader:
         # Parse crucial values
         values = self.parse_args()
 
+        self.configure_logger(**values)
         config_cls = self.get_config(**values)
 
         # Reparse values with new parameters added from config
         values = self.parse_args(values)
         values.update(config_cls(**values))
 
+        self.configure_logger(**values)
+
         # Finally load extensions and reparse values
         # based on extensions
         extensions = self.get_extensions(**values)
+        LOGGER.debug("%s", extensions)
         values = self.parse_args(values)
 
-        print("Extensions: ", extensions)
         # By decoration, create a composite renderer from the extensions
         # and with the base renderer
         renderable = Renderer(**values)
         while extensions:
             renderable = extensions.pop()(renderable, **values)
 
-        print("Context: ", values)
         return renderable(values.get("file"))
 
 def main():
-    print(Loader()())
+    try:
+        print(Loader()())
+    except Exception as e:
+        LOGGER.error(e)
+        exit(1)
+        pass
 
 if __name__ == "__main__":
     main()

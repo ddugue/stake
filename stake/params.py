@@ -1,5 +1,8 @@
 #-- Imports
 import types
+import logging
+
+LOGGER = logging.getLogger("stake")
 
 __all__ = ["string", "boolean", "integer", "choice", "array"]
 #-- Constants
@@ -81,8 +84,18 @@ class Parameter():
         def validate_args(*args, **kwargs):
             "Wrapping function that validates the args sent"
             # We get the namespace of the current argument
+            try:
+                return wrapped_fn(*args, **self.parse(kwargs, name=wrapped.__name__))
+            except TypeError as e:
+                args = str(e).split(":")[-1]
+                LOGGER.error("""
+                Could not validate the arguments {} for {}.
 
-            return wrapped_fn(*args, **self.parse(kwargs, name=wrapped.__name__))
+                Make sure to include all arguments either from cli or configuration
+                file and that no extensions are shadowing the context
+
+                Original error: {}""".format(args, wrapped_fn.__name__ if is_fn else wrapped.__name__, str(e)))
+                raise
 
         if not is_fn:
             wrapped.__init__ = validate_args
