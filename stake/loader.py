@@ -4,8 +4,11 @@ import os
 import sys
 
 import logging
-LOGGER = logging.getLogger()
-HANDLER = logging.StreamHandler()
+import colorlog
+LOGGER = colorlog.getLogger()
+HANDLER = colorlog.StreamHandler()
+HANDLER.setFormatter(colorlog.ColoredFormatter(
+	'%(log_color)s[%(levelname)s]: %(message)s'))
 LOGGER.addHandler(HANDLER)
 
 from .renderer import Renderer
@@ -22,7 +25,7 @@ def import_element(path):
     # return getattr(importlib.import_module(path), "__default__")
 
 class Loader:
-    "Loads the different modules and renders a file"
+    "Loads the different modules and renders a file with Jinja2"
 
     @params.string("config_type", default="stake.config.ini.parser")
     def get_config(self, config_type, **__):
@@ -37,8 +40,8 @@ class Loader:
             sys.path.append(os.path.join(os.getcwd(), d))
         return [import_element(extension) for extension in extensions]
 
-    @params.string("output", short="o", default=None, help="Save render to output (default stdout)")
-    @params.string("output_dir", default=".", help="Directory of output for relative paths")
+    @params.string("output", short="o", default=None, help="Save render to OUTPUT (default stdout)")
+    @params.string("output_dir", default=".", help="Directory of OUTPUT for relative paths")
     def get_output(self, output, output_dir, **__):
         "Return a file-like object to output the result of the render"
         if output:
@@ -50,6 +53,7 @@ class Loader:
 
     @params.boolean("verbose", default=False, help="Verbose output")
     def configure_logger(self, verbose, **__):
+        "Configure the global logger based on arguments parsed by the Loader"
         if verbose:
             LOGGER.setLevel(logging.DEBUG)
         else:

@@ -72,7 +72,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['Jinja2'],
+    install_requires=['Jinja2', 'colorlog'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
