@@ -19,7 +19,8 @@ class SilentUndefined(Undefined):
 from . import params
 
 @params.string("cwd", default=".")
-@params.boolean("silence_undefined", default=False, help="Option to silence undefined variable in template rendering")
+@params.boolean("silence_undefined", default=False,
+                help="Option to silence undefined variable in template rendering")
 @params.namespace("site")
 class Renderer:
     """Renders a file in an extensible way"""
@@ -49,6 +50,7 @@ class Renderer:
         def render(environment, ctxt_data, file_path):
             "Renders a jinja2 template"
             logging.debug("Rendering with context data %s", ctxt_data)
+
             template = environment.get_template(file_path)
             return template.render(**ctxt_data)
         return render
@@ -78,7 +80,7 @@ class Renderer:
 
         except UndefinedError as e:
             logging.error("""
-            %s. Make sure that your context data has that value. You can print
+            Template variable %s. Make sure that your context data has that value. You can print
             your context data by enabling the '--verbose' argument.
 
             Additionally, you can silence undefined variable in Jinja2 by turning

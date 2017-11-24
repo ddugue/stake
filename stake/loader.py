@@ -11,20 +11,36 @@ from .extensions.base import Extension
 
 def import_element(path):
     "Import and return a single element via importlib"
+    exception = None
 
     packages = path.split(".")
-    # if packages[-1][0].isupper(): # Means its a class
-    module = ".".join(packages[:-1])
-    return getattr(importlib.import_module(module), packages[-1])
-    # return getattr(importlib.import_module(path), "__default__")
+    cls = packages[-1] if packages[-1][0].isupper() else None
+
+    module_path = ".".join(packages[:-1]) if cls else path
+    try:
+        module = importlib.import_module(module_path)
+    except ModuleNotFoundError as e:
+    # except Exception as e:
+        exception = e
+        #We shall retry to import module with prepending our own extensions
+        try:
+            module = importlib.import_module("stake.extensions."+module_path)
+        except ModuleNotFoundError as er:
+            raise exception
+    if cls:
+        return getattr(module, cls)
+    return getattr(module, "__default__")
 
 class Loader:
     "Loads the different modules and renders a file with Jinja2"
 
-    @params.string("config_type", default="stake.config.ini.parser")
-    def get_config(self, config_type, **__):
+    @params.string("config_file", short="c", help="Relative path to the config file")
+    def get_config(self, config_file, **__):
         "Load a specific config type"
-        return import_element(config_type)
+        if config_file.endswith("ini"):
+            from stake.config.ini import parser
+            return parser
+        return None
 
     @params.array("extensions", short="x", default=[], help="Extensions to load")
     @params.array("extension_dir", default=["."], help="Extension directories to add to sys path relative to project root")
