@@ -3,14 +3,7 @@ import importlib
 import os
 import sys
 
-import logging
-import colorlog
-LOGGER = colorlog.getLogger()
-HANDLER = colorlog.StreamHandler()
-HANDLER.setFormatter(colorlog.ColoredFormatter(
-	'%(log_color)s[%(levelname)s]: %(message)s'))
-LOGGER.addHandler(HANDLER)
-
+from . import logging
 from .renderer import Renderer
 from . import params
 from .extensions.base import Extension
@@ -46,13 +39,13 @@ class Loader:
                 assert issubclass(extension_cls, Extension)
                 yield import_element(extension)
             except AttributeError as e:
-                LOGGER.error("""
+                logging.error("""
                 Could not find %s class. Make sure that class %s is in your path.
                 To add a directory to your path easily. Simply add a directory in 'extension_dir' parameter.
                 """, extension, extension)
                 raise e
             except AssertionError as e:
-                LOGGER.error("""
+                logging.error("""
                 Make sure that %s is extending the base class Extension.
                 '''
                 from stake.extension.base import Extension
@@ -77,9 +70,9 @@ class Loader:
     def configure_logger(self, verbose, **__):
         "Configure the global logger based on arguments parsed by the Loader"
         if verbose:
-            LOGGER.setLevel(logging.DEBUG)
+            logging.setLevel(logging.DEBUG)
         else:
-            LOGGER.setLevel(logging.WARNING)
+            logging.setLevel(logging.WARNING)
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(conflict_handler="resolve")
@@ -111,10 +104,10 @@ class Loader:
         # Finally load extensions and reparse values
         # based on extensions
         extensions = list(self.get_extensions(**values))
-        LOGGER.debug("Reparsing CLI arguments with new extensions loaded...")
+        logging.debug("Reparsing CLI arguments with new extensions loaded...")
         values = self.parse_args(values)
 
-        LOGGER.debug("Rendering %s with extensions %s...", values.get("file"), extensions)
+        logging.debug("Rendering %s with extensions %s...", values.get("file"), extensions)
         # By decoration, create a composite renderer from the extensions
         # and with the base renderer
         renderable = Renderer(**values)
@@ -123,7 +116,7 @@ class Loader:
 
         rendered = renderable(values.get("file"))
 
-        LOGGER.debug("Saving %s to %s...", values.get("file"), values.get("output"))
+        logging.debug("Saving %s to %s...", values.get("file"), values.get("output") or "terminal")
         output = self.get_output(**values)
         output.write(rendered)
         output.close()
@@ -132,7 +125,7 @@ def main():
     try:
         Loader()()
     except Exception as e:
-        LOGGER.error(e)
+        logging.error("(%s): %s", e.__class__.__name__, e)
         exit(1)
 
 if __name__ == "__main__":
