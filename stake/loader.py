@@ -2,12 +2,15 @@ import argparse
 import importlib
 import os
 import sys
-import logging
-LOGGER = logging.getLogger("stake")
 
+import logging
+LOGGER = logging.getLogger()
+HANDLER = logging.StreamHandler()
+LOGGER.addHandler(HANDLER)
 
 from .renderer import Renderer
 from . import params
+
 
 def import_element(path):
     "Import and return a single element via importlib"
@@ -47,12 +50,10 @@ class Loader:
 
     @params.boolean("verbose", default=False, help="Verbose output")
     def configure_logger(self, verbose, **__):
-        logger = logging.getLogger("stake")
         if verbose:
-            logger.setLevel(logging.DEBUG)
+            LOGGER.setLevel(logging.DEBUG)
         else:
-            logger.setLevel(logging.WARNING)
-        return logger
+            LOGGER.setLevel(logging.WARNING)
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(conflict_handler="resolve")
@@ -83,7 +84,7 @@ class Loader:
         # Finally load extensions and reparse values
         # based on extensions
         extensions = self.get_extensions(**values)
-        LOGGER.debug("%s", extensions)
+        LOGGER.debug("Rendering %s with extensions %s", values.get("file"), extensions)
         values = self.parse_args(values)
 
         # By decoration, create a composite renderer from the extensions
@@ -100,7 +101,6 @@ def main():
     except Exception as e:
         LOGGER.error(e)
         exit(1)
-        pass
 
 if __name__ == "__main__":
     main()

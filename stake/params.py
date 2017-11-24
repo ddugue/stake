@@ -218,6 +218,9 @@ def argparser_arguments(parameter, default_values=None):
         "dest": parameter.name
     })
 
+    if isinstance(parameter, BoolParameter):
+        kwargs["action"] = "store_true"
+
     return (args, kwargs) if parameter.is_cli else (None, None)
 
 #-- Alias for decorators
