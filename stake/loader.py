@@ -13,6 +13,7 @@ LOGGER.addHandler(HANDLER)
 
 from .renderer import Renderer
 from . import params
+from .extensions.base import Extension
 
 
 def import_element(path):
@@ -38,7 +39,28 @@ class Loader:
         "Imports and returns the list of extensions"
         for d in extension_dir:
             sys.path.append(os.path.join(os.getcwd(), d))
-        return [import_element(extension) for extension in extensions]
+
+        for extension in extensions:
+            try:
+                extension_cls = import_element(extension)
+                assert issubclass(extension_cls, Extension)
+                yield import_element(extension)
+            except AttributeError as e:
+                LOGGER.error("""
+                Could not find %s class. Make sure that class %s is in your path.
+                To add a directory to your path easily. Simply add a directory in 'extension_dir' parameter.
+                """, extension, extension)
+                raise e
+            except AssertionError as e:
+                LOGGER.error("""
+                Make sure that %s is extending the base class Extension.
+                '''
+                from stake.extension.base import Extension
+                class YourClass(Extension):
+                    ...
+
+                '''""", extension)
+                raise e
 
     @params.string("output", short="o", default=None, help="Save render to OUTPUT (default stdout)")
     @params.string("output_dir", default=".", help="Directory of OUTPUT for relative paths")
@@ -88,7 +110,8 @@ class Loader:
 
         # Finally load extensions and reparse values
         # based on extensions
-        extensions = self.get_extensions(**values)
+        extensions = list(self.get_extensions(**values))
+        LOGGER.debug("Reparsing CLI arguments with new extensions loaded...")
         values = self.parse_args(values)
 
         LOGGER.debug("Rendering %s with extensions %s...", values.get("file"), extensions)
