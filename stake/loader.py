@@ -31,6 +31,7 @@ def import_element(path):
         return getattr(module, cls)
     return getattr(module, "__default__")
 
+
 class Loader:
     "Loads the different modules and renders a file with Jinja2"
 

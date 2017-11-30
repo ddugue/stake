@@ -1,1 +1,1 @@
-python src/loader.py tests/test.html -c tests/test.ini --verbose 1
+python -m stake.loader tests/test.html -o tests/d/output.html -c tests/test.ini --verbose

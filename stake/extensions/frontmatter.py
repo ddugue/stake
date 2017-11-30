@@ -58,6 +58,7 @@ class FrontMatterExtension(base.Extension):
         return dict(config.items("Page"))
 
     def get_render_fn(self):
+        "We override render function to pre-parse the file to fetch more context"
         render_fn = super().get_render_fn()
         def render(environment, ctxt_data, file_path):
             "Before rendering the template, loads the front matter"
@@ -68,7 +69,8 @@ class FrontMatterExtension(base.Extension):
             output = render_fn(environment, ctxt_data, file_path)
 
             # Before returing output, we strip the front matter block
-            return "\n".join(output.split("\n")[len(lines):])
+            # return "\n".join(output.split("\n")[len(lines):])
+            return output
         return render
 
 __default__ = FrontMatterExtension

@@ -1,4 +1,4 @@
-# Zen: A Simple Jinja2-CLI
+# Garden Stake: A Simple Jinja2-CLI
 ## Overview
 ## Philosophy and goals
 ## Installation
