@@ -20,7 +20,6 @@ def import_element(path):
     try:
         module = importlib.import_module(module_path)
     except ModuleNotFoundError as e:
-    # except Exception as e:
         exception = e
         #We shall retry to import module with prepending our own extensions
         try:

@@ -2,6 +2,7 @@
 ## Overview
 ## Philosophy and goals
 ## Installation
+pip install -e <path>
 ## Usage
 ## Extending
 ## Contributions
