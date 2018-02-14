@@ -162,6 +162,22 @@ class ListParameter(Parameter):
             return value
         return str(value).split(",")
 
+class FileParameter(Parameter):
+    """Ensures that a file exists and opens it"""
+
+    def __init__(self, name, mode='r', *args, **argparse_kwargs):
+        self.file_mode = mode
+        super().__init__(name, *args, **argparse_kwargs)
+
+    def convert(self, value):
+        try:
+            return open(value, mode=self.file_mode)
+        except FileNotFoundError:
+            raise ValueError("Couldn't open %s (File not found)" % (value))
+        except PermissionError:
+            raise ValueError("Couldn't open %s (Permission error)" % (value))
+
+
 class ChoiceParameter(Parameter):
     """Ensures that a parameter is an available choice"""
 
@@ -231,6 +247,7 @@ boolean = BoolParameter
 choice = ChoiceParameter
 array = ListParameter
 namespace = NamespaceParameter
+file = FileParameter
 
 #-- Public function
 def add_arguments(parser, default_values=None):
