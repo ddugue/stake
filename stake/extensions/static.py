@@ -14,7 +14,7 @@ class StaticFileExtension(base.Extension):
         return lambda path: prefix + path
 
     def get_context_data(self) -> dict:
-        "Extends the context data with an url function"
+        "Extends the context data with an static function"
         ctxt_data = super().get_context_data()
         ctxt_data["static"] = self.get_static_fn()
         return ctxt_data
