@@ -1,5 +1,5 @@
 import os
-
+import codecs
 from stake import params
 from . import base
 from .. import logging
@@ -16,8 +16,13 @@ class DataExtension(base.Extension):
         ext = os.path.splitext(f.name)[1]
         if ext == '.json':
             logging.debug("Opening file %s as JSON", f.name)
+            fileObj = codecs.open(f.name, "r", "utf-8" )
+
+            byt = fileObj.read()
             import json
-            return json.load(f)
+            logging.debug("Parsing as JSON")
+            return json.loads(byt)
+            # return json.load(f)
 
         elif ext == '.yml' or ext == '.yaml':
             logging.debug("Opening file %s as YAML", f.name)

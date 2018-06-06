@@ -84,7 +84,7 @@ class Loader:
             result_path = os.path.abspath(os.path.join(output_dir, output))
             result_dir = os.path.dirname(result_path)
             os.makedirs(result_dir, exist_ok=True)
-            return open(result_path, "w")
+            return open(result_path, "wb")
         return sys.stdout
 
     @params.boolean("verbose", default=False, help="Verbose output")
@@ -139,7 +139,7 @@ class Loader:
 
         logging.debug("Saving %s to %s...", values.get("file"), values.get("output") or "terminal")
         output = self.get_output(**values)
-        output.write(rendered)
+        output.write(rendered.encode('utf-8'))
         output.close()
 
 def main():
