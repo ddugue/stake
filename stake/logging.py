@@ -1,3 +1,4 @@
+import sys
 import logging
 import colorlog
 import textwrap
@@ -11,7 +12,7 @@ class CustomFormatter(colorlog.TTYColoredFormatter):
 
 # Configure Logger
 LOGGER = colorlog.getLogger()
-HANDLER = colorlog.StreamHandler()
+HANDLER = colorlog.StreamHandler(sys.stdout)
 HANDLER.setFormatter(CustomFormatter(
 	'%(log_color)s[%(levelname)s]: %(message)s'))
 LOGGER.addHandler(HANDLER)
