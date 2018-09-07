@@ -15,7 +15,15 @@ LOGGER = colorlog.getLogger()
 HANDLER = colorlog.StreamHandler(sys.stdout)
 HANDLER.setFormatter(CustomFormatter(
 	'%(log_color)s[%(levelname)s]: %(message)s'))
+HANDLER.addFilter(lambda record: record.levelno != logging.ERROR)
+
+ERROR_HANDLER = colorlog.StreamHandler(sys.stderr)
+ERROR_HANDLER.setFormatter(CustomFormatter(
+	'%(log_color)s[%(levelname)s]: %(message)s'))
+ERROR_HANDLER.addFilter(lambda record: record.levelno == logging.ERROR)
+
 LOGGER.addHandler(HANDLER)
+LOGGER.addHandler(ERROR_HANDLER)
 
 # Exports to proxy our global Logger
 error    = LOGGER.error
