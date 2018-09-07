@@ -69,13 +69,14 @@ class Renderer:
             return render(environment, context_data, file_path)
 
         except TemplateNotFound as e:
+            path = os.path.abspath(os.pathos.path.join(getattr(self, "cwd"))
             logging.error("""
             Could not found template %s. Make sure that template %s exists and
             is readable.
 
             You can change directory for templates, by setting the 'cwd' argument
             via your config or via the command line.
-            """, e, os.path.join(getattr(self, "cwd"), str(e)))
+            """, e, path, str(e)))
             raise
 
         except UndefinedError as e:
