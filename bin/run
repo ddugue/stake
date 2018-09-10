@@ -1,3 +1,3 @@
 #!/bin/sh
 
-python -m stake.loader tests/test.html -o tests/d/output.html -c tests/test.ini --verbose
+python -m stake.loader tests/test.html -o tests/d/output.html -c tests/test.ini --verbose -d

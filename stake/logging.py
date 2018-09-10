@@ -29,7 +29,7 @@ LOGGER.addHandler(ERROR_HANDLER)
 error    = LOGGER.error
 debug    = LOGGER.debug
 info     = LOGGER.info
-warning  = LOGGER.info
+warning  = LOGGER.warning
 setLevel = LOGGER.setLevel
 
 WARNING  = logging.WARNING

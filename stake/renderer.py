@@ -75,7 +75,7 @@ class Renderer:
             is readable.
 
             You can change directory for templates, by setting the 'cwd' argument
-            via your config or via the command line.
+            via your config (under [Base]) or via the command line.
             """, e, path)
             raise
 
