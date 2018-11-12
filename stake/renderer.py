@@ -1,6 +1,9 @@
 import os
 import logging
 
+import unicodedata
+import re
+
 from . import logging
 
 from jinja2 import Environment, BaseLoader, FileSystemLoader, TemplateNotFound, \
@@ -17,6 +20,13 @@ class SilentUndefined(Undefined):
         return None
 
 from . import params
+
+def slugify(string):
+    slug = unicodedata.normalize('NFKD', string)
+    slug = slug.encode('ascii', 'ignore').lower()
+    slug = re.sub(b'[^a-z0-9]+', b'-', slug).strip(b'-')
+    slug = re.sub(b'[-]+', b'-', slug)
+    return slug.decode('utf-8')
 
 @params.string("cwd", default=".")
 @params.boolean("silence_undefined", default=False,
@@ -36,8 +46,11 @@ class Renderer:
     def get_environment(self) -> Environment:
         """Returns the jinja2 environment"""
         if self.silence_undefined:
-            return Environment(loader=self.get_loader(), undefined=SilentUndefined)
-        return Environment(loader=self.get_loader())
+            env = Environment(loader=self.get_loader(), undefined=SilentUndefined)
+        else:
+            env = Environment(loader=self.get_loader())
+        env.filters['slug'] = slugify
+        return env
 
     def get_context_data(self) -> dict:
         """Returns a dict of the ctxt data"""
