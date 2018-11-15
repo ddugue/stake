@@ -104,6 +104,7 @@ class Parameter():
 
     def convert(self, value):
         """Cast the value to the desired type, raise value error on impossible cast"""
+        if value is None: return None
         return self.__class__.cast(value)
 
     def parse(self, kwargs, name=None):
