@@ -11,6 +11,8 @@ from jinja2.ext import i18n
 @params.string("i18n:locale_dir", help="Directory for locales", default="assets/locales")
 @params.boolean("i18n:ignore_errors", help="Ignore errors", is_cli=False, default=False)
 class I18nExtension(base.Extension):
+
+
     def get_context_data(self) -> dict:
         "Replace current context data url function with an i18n one"
         ctxt = super().get_context_data()
@@ -21,8 +23,14 @@ class I18nExtension(base.Extension):
         ctxt["CURRENT_LANG"] = getattr(self, "language")
         ctxt["current_language"] = getattr(self, "language")
 
+        # We decorate url function with additional lang keyword
         if "url" in ctxt:
-            ctxt["url"] = lambda uri: uri
+            uri_fn = ctxt["url"]
+            def get_url(*args, **kwargs):
+                kwargs['lang'] = ctxt["lang"]
+                return uri_fn(*args, **kwargs)
+            ctxt["url"] = get_url
+
         return ctxt
 
     def get_translations(self):
