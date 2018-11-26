@@ -27,7 +27,7 @@ class I18nExtension(base.Extension):
         if "url" in ctxt:
             uri_fn = ctxt["url"]
             def get_url(*args, **kwargs):
-                kwargs['lang'] = ctxt["lang"]
+                kwargs['lang'] = kwargs.get("lang", ctxt["lang"])
                 return uri_fn(*args, **kwargs)
             ctxt["url"] = get_url
 

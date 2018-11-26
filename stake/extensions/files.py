@@ -78,7 +78,7 @@ class FileExtension(base.Extension):
 
                 If you want to deactivate this type of error, you can set
                 ignore_empty parameter.
-                """ % (pattern, cwd))
+                """ % (pattern, directory))
                 raise ValueError("Couldn't find any files")
             return files
 
