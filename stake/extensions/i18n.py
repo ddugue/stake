@@ -1,16 +1,25 @@
+import logging
 
 from . import base
 from stake import params
 from jinja2.ext import i18n
+from jinja2 import Environment
 
 @params.string("i18n:language", help="Language for to render with", short="l")
+@params.string("i18n:main", help="Main language for to render with", default=None)
 @params.string("i18n:locale_dir", help="Directory for locales", default="assets/locales")
-class I18nExtension(base.extension):
+class i18nExtension(base.Extension):
     def get_context_data(self) -> dict:
         "Replace current context data url function with an i18n one"
         ctxt = super(i18nExtension, self).get_context_data()
+        ctxt["lang"] = getattr(self, "language")
         if "url" in ctxt:
-            ctxt["url"] = lambda uri: uri
+            def url(uri, override=None):
+                lang = override or getattr(self, "language")
+                if lang == getattr(self, "main"):
+                    return uri
+                return "/%s%s" % (lang, uri)
+            ctxt["url"] = url
         return ctxt
 
     def get_translations(self):
@@ -34,4 +43,4 @@ class I18nExtension(base.extension):
         env.install_gettext_translations(self.get_translations())
         return env
 
-__default__ = I18nExtension
+__default__ = i18nExtension
