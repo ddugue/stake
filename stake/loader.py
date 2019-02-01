@@ -85,6 +85,7 @@ class Loader:
             result_dir = os.path.dirname(result_path)
             os.makedirs(result_dir, exist_ok=True)
             return open(result_path, "wb")
+        logging.debug('No output source specified, writing to stdout')
         return sys.stdout
 
     @params.boolean("verbose", default=False, help="Verbose output")
@@ -139,7 +140,10 @@ class Loader:
 
         logging.debug("Saving %s to %s...", values.get("file"), values.get("output") or "terminal")
         output = self.get_output(**values)
-        output.write(rendered.encode('utf-8'))
+        if output == sys.stdout:
+            output.write(rendered)
+        else:
+            output.write(rendered.encode('utf-8'))
         output.close()
 
 def main():

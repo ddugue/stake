@@ -4,7 +4,7 @@ import configparser
 from stake import params
 from . import base
 
-@params.integer("fm:allowed_skip", default=3)
+@params.integer("fm:allowed_skip", default=3, is_cli=False)
 @params.string("fm:identifier", short="I", default="--")
 class FrontMatterExtension(base.Extension):
     """Provides an extension that adds front matter parsing

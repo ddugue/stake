@@ -104,6 +104,7 @@ class Parameter():
 
     def convert(self, value):
         """Cast the value to the desired type, raise value error on impossible cast"""
+        if value is None: return None
         return self.__class__.cast(value)
 
     def parse(self, kwargs, name=None):
@@ -227,8 +228,6 @@ def argparser_arguments(parameter, default_values=None):
     if default_values and parameter.name in default_values:
         kwargs["default"] = default_values[parameter.name]
 
-    if not "default" in kwargs:
-        kwargs["required"] = True
 
     kwargs.update({
         "dest": parameter.name
@@ -236,6 +235,10 @@ def argparser_arguments(parameter, default_values=None):
 
     if isinstance(parameter, BoolParameter):
         kwargs["action"] = "store_true"
+        kwargs["default"] = kwargs.get("default", False)
+
+    if not "default" in kwargs:
+        kwargs["required"] = True
 
     return (args, kwargs) if parameter.is_cli else (None, None)
 

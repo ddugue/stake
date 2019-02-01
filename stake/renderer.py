@@ -1,6 +1,9 @@
 import os
 import logging
 
+import unicodedata
+import re
+
 from . import logging
 
 from jinja2 import Environment, BaseLoader, FileSystemLoader, TemplateNotFound, \
@@ -17,6 +20,13 @@ class SilentUndefined(Undefined):
         return None
 
 from . import params
+
+def slugify(string):
+    slug = unicodedata.normalize('NFKD', string)
+    slug = slug.encode('ascii', 'ignore').lower()
+    slug = re.sub(b'[^a-z0-9]+', b'-', slug).strip(b'-')
+    slug = re.sub(b'[-]+', b'-', slug)
+    return slug.decode('utf-8')
 
 @params.string("cwd", default=".")
 @params.boolean("silence_undefined", default=False,
@@ -36,8 +46,11 @@ class Renderer:
     def get_environment(self) -> Environment:
         """Returns the jinja2 environment"""
         if self.silence_undefined:
-            return Environment(loader=self.get_loader(), undefined=SilentUndefined)
-        return Environment(loader=self.get_loader())
+            env = Environment(loader=self.get_loader(), undefined=SilentUndefined)
+        else:
+            env = Environment(loader=self.get_loader())
+        env.filters['slug'] = slugify
+        return env
 
     def get_context_data(self) -> dict:
         """Returns a dict of the ctxt data"""
@@ -69,13 +82,14 @@ class Renderer:
             return render(environment, context_data, file_path)
 
         except TemplateNotFound as e:
+            path = os.path.abspath(os.path.join(getattr(self, "cwd"), str(e)))
             logging.error("""
             Could not found template %s. Make sure that template %s exists and
             is readable.
 
             You can change directory for templates, by setting the 'cwd' argument
-            via your config or via the command line.
-            """, e, os.path.join(getattr(self, "cwd"), str(e)))
+            via your config (under [Base]) or via the command line.
+            """, e, path)
             raise
 
         except UndefinedError as e:
