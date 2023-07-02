@@ -3,7 +3,7 @@ import logging
 import colorlog
 import textwrap
 
-class CustomFormatter(colorlog.TTYColoredFormatter):
+class CustomFormatter(colorlog.ColoredFormatter):
     """ Colored formatter that removes indentation caused by triple quotes """
     def format(self, record):
         if isinstance(record.msg, str):

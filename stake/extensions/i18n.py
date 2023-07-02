@@ -75,4 +75,4 @@ class I18nExtension(base.Extension):
         env.install_gettext_translations(self.get_translations())
         return env
 
-__default__ = i18nExtension
+__default__ = I18nExtension
